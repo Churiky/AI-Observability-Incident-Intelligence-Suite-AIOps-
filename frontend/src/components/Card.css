@@ -1,0 +1,72 @@
+.card {
+  background: var(--bg-surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: var(--transition-smooth);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: transparent;
+  transition: var(--transition-smooth);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-color-hover);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.card-icon {
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-value {
+  font-size: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-main);
+  line-height: 1;
+}
+
+/* Card highlight states based on props */
+.card.danger::before { background: var(--color-danger); }
+.card.success::before { background: var(--color-success); }
+.card.warning::before { background: var(--color-warning); }
+.card.primary::before { background: var(--color-primary); }
+
+.card.danger .card-value { color: var(--color-danger); text-shadow: 0 0 15px var(--color-danger-glow); }
+.card.success .card-value { color: var(--color-success); text-shadow: 0 0 15px var(--color-success-glow); }
+.card.warning .card-value { color: var(--color-warning); text-shadow: 0 0 15px var(--color-warning-glow); }
+.card.primary .card-value { color: var(--color-primary); text-shadow: 0 0 15px var(--color-primary-glow); }

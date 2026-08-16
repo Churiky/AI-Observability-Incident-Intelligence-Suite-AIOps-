@@ -1,0 +1,140 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: observability_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-observability}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-observability_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-observability_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: observability_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Ollama for local LLM (optional - requires significant resources)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: observability_ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /proc/net/tcp && grep -i 11434 /proc/net/tcp | wc -l || true"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Uncomment if you have GPU support
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./docker/backend.Dockerfile
+    container_name: observability_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - FAPI_HOST=0.0.0.0
+      - FAPI_PORT=8000
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_USER=${POSTGRES_USER:-observability}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-observability_pass}
+      - POSTGRES_DB=${POSTGRES_DB:-observability_db}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=llama2
+      - EMBEDDING_MODEL=all-MiniLM-L6-v2
+      - FAISS_INDEX_PATH=./ml/artifacts/faiss_index
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-here-change-in-production}
+    volumes:
+      - ./app:/app/app
+      - ./ml:/app/ml
+      - ./scripts:/app/scripts
+      - ./data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ./Dockerfile
+    container_name: observability_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api/v1
+    depends_on:
+      - backend
+
+  worker:
+    build:
+      context: .
+      dockerfile: ./docker/backend.Dockerfile
+    container_name: observability_worker
+    restart: unless-stopped
+    volumes:
+      - ./app:/app/app
+      - ./ml:/app/ml
+      - ./scripts:/app/scripts
+    environment:
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_USER=${POSTGRES_USER:-observability}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-observability_pass}
+      - POSTGRES_DB=${POSTGRES_DB:-observability_db}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=llama2
+      - EMBEDDING_MODEL=all-MiniLM-L6-v2
+      - FAISS_INDEX_PATH=./ml/artifacts/faiss_index
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-here-change-in-production}
+      - PYTHONPATH=/app/app
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    command: sleep infinity
+
+volumes:
+  postgres_data:
+  redis_data:
+  ollama_data:

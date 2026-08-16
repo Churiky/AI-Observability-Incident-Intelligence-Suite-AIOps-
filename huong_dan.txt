@@ -1,0 +1,204 @@
+HƯỚNG DẪN CHI TIẾT HOÀN THỊNH VÀ CHẠY PROJECT AI OBSERVABILITY PLATFORM
+
+================================================================================
+BƯỚC 1: KIỂM TRA YÊU CẦU HỆ THỐNG
+================================================================================
+Trước khi bắt đầu, đảm bảo máy tính của bạn có:
+- Git đã được cài đặt (để clone repository)
+- Python 3.11 trở lên (kiểm Tra bằng lệnh: python --version)
+- Pip (công cụ cài đặt gói Python) đã có sẵn
+- (Tùy chọn) Docker và Docker Compose (để chạy nhanh nhất)
+- (Tùy chọn) Node.js 18+ và npm (nếu muốn phát triển frontend)
+
+================================================================================
+BƯỚC 2: TẢI VỀ MÃ NGUỒN
+================================================================================
+Nếu bạn vẫn chưa có mã nguồn:
+1. Mở terminal/command prompt
+2. Di chuyển đến thư mục muốn lưu project (ví dụ: cd D:\ )
+3. Clone repository bằng lệnh:
+   git clone <URL_REPOSITORY>
+4. Di chuyển vào thư mục project:
+   cd ai-observability-platform   (hoặc tên thư mục bạn đã clone)
+
+================================================================================
+BƯỚC 3: CÀI ĐẶT PHỤ THUỘC (PHƯƠNG PHÁP ĐỘNG NHẬT)
+================================================================================
+Đây là cách đơn giản nhất để cài đặt tất cả thư viện cần thiết:
+
+1. Mở terminal trong thư mục project (ai-observability-platform)
+2. Chạy lệnh sau để cài đặt tất cả dependencies từ file requirements.txt:
+   pip install -r requirements.txt
+
+   Lưu ý:
+   - Nếu gặp lỗi permission, hãy thêm --user sau lệnh: pip install -r requirements.txt --user
+   - Nếu sử dụng Python 3.12 trở lên, một số gói có thể cần phiên bản tương thích
+   - Quá trình này có thể mất từ 5-15 phút tùy thuộc vào kết nối internet
+
+3. Đợi quá trình cài đặt hoàn thành. Bạn sẽ thấy thông báo như:
+   Successfully installed fastapi-0.104.0 pydantic-2.5.0 pydantic-settings-2.1.0 SQLAlchemy-2.0.23 ...
+
+================================================================================
+BƯỚC 4: KIỂM TRA SAU CÀI ĐẶT PHỤ THUỘC
+================================================================================
+Sau khi cài đặt xong, hãy chạy script xác minh để chắc chắn mọi thứ hoạt động tốt:
+1. Trong terminal, vẫn ở thư mục project, chạy:
+   python verify_setup.py
+
+2. Nếu mọi thứ OK, bạn sẽ thấy:
+   ==================================================
+   All verification tests passed!
+   The AI Observability Platform is ready for development.
+   ==================================================
+
+3. Nếu vẫn gặp lỗi import (ví dụ: No module named 'pydantic_settings'), hãy:
+   - Kiểm tra lại bạn đã chạy đúng lệnh pip install -r requirements.txt chưa
+   - Thử đóng và mở lại terminal sau khi cài đặt
+   - Sử dụng pip thay cho pip3 nếu bạn có nhiều phiên bản Python
+
+================================================================================
+BƯỚC 5: THIẾT LẬP CƠ SỞ DỮ LIỆU (CSDL)
+================================================================================
+Project cần PostgreSQL và Redis để hoạt động đầy đủ. Có 2 cách:
+
+PHƯƠNG PHÁP A: SỬ DỤNG DOCKER (ĐỘNG NHẬT VÀ AN TOÀN NHẤT)
+--------------------------------------------------------------------
+1. Đảm bảo Docker Desktop đã được cài đặt và đang chạy
+2. Trong thư mục project, chạy lệnh:
+   docker compose up -d
+3. Đợi khoảng 30-60 giây để tất cả 서비ss khởi động:
+   - postgres: database PostgreSQL
+   - redis: bộ nhớ đệm và hàng đợi
+   - backend: ứng dụng FastAPI
+   - frontend: giao diện React (nếu có)
+4. Kiểm tra trạng thái bằng lệnh:
+   docker compose ps
+   Tất cả services nên hiển thị trạng thái "Up"
+
+PHƯƠNG PHÁP B: CÀI ĐẶT POSTGRESQL VÀ REDIS TRÊN HỆ THỐNG
+--------------------------------------------------------------------
+1. Cài đặt PostgreSQL 15+ từ: https://www.postgresql.org/download/
+   - Trong quá trình cài đặt, nhớ mật khẩu bạn đặt cho user "postgres"
+2. Cài đặt Redis 7+ từ: https://redis.io/download
+   - Hoặc dùng package manager: chocolatey install redis ( Windows) hoặc brew install redis (Mac)
+3. Khởi động cả 2 dịch vụ này
+4. Sao chép file .env.example thành .env và chỉnh sửa các giá trị:
+   copy .env.example .env
+   Sau đó mở file .env và thay đổi:
+   POSTGRES_PASSWORD=mat_khau_ban_dat_tai_b2
+   (Giữ lại các giá trị другие nếu bạn dùng cài đặt mặc định)
+5. Chạy script khởi tạo CSDL:
+   python scripts/seed_database.py --setup-all
+
+================================================================================
+BƯỚC 6: CHẠY ỨNG DỤNG
+================================================================================
+
+PHƯƠNG PHÁP A: CHẠY QUA DOCKER (DEN DON NHẬT)
+--------------------------------------------------------------------
+Nếu bạn đã làm bước 4A (docker compose up -d), thì ứng dụng đã đang chạy:
+- Truy cập API tại: http://localhost:8000
+- Truy cập tài liệu API Swagger tại: http://localhost:8000/docs
+- Truy cập giao diện frontend tại: http://localhost:3000 (nếu đã build frontend)
+- Để xem log: docker compose logs -f
+- Để dừng tất cả services: docker compose down
+
+PHƯƠNG PHÁP B: CHẠY LỚCAL TRÊN MÁY TÍNH
+--------------------------------------------------------------------
+1. Mở 3 terminal khác nhau (hoặc 3 tab trong một terminal):
+
+   Terminal 1 - Chạy API Backend:
+   uvicorn app.main:app --reload
+   (Trường h Ø http://localhost:8000)
+
+   Terminal 2 - Chạy Streaming Worker (xử lý log thời gian thực):
+   python scripts/streaming_worker.py
+
+   Terminal 3 - Chạy Celery Worker (xử lý công việc nền):
+   python scripts/celery_worker.py
+
+2. Mở trình duyệt và truy cập:
+   - API Documentation: http://localhost:8000/docs
+   - Thử gửi request test qua giao diện Swagger
+
+================================================================================
+BƯỚC 7: KIỂM TRA API QUA SWAGGER UI
+================================================================================
+1. Mở trình duyệt và vào địa chỉ: http://localhost:8000/docs
+2. Bạn sẽ thấy giao diện Swagger với tất cả các endpoint được liệt kê
+3. Thử nghiệm một vài endpoint cơ bản:
+   - Nhấn vào GET /api/v1/incidents
+   - Chọn "Try it out" → "Execute"
+   - Bạn devrait thấy phản hồi JSON (có thể là mảng rỗng [] nếu chưa có dữ liệu)
+4. Thử gửi log test qua endpoint POST /api/v1/logs/ingest với body:
+   [
+     {
+       "timestamp": "2026-08-16T10:00:00",
+       "service": "test-service",
+       "level": "INFO",
+       "message": "This is a test log",
+       "environment": "development"
+     }
+   ]
+5. Sau khi gửi, kiểm tra lại GET /api/v1/logs để xem log đã được lưu
+
+================================================================================
+BƯỚC 8: TẠO DỮ LIỆU TEST GIẢ (TUYỂN CHỌN)
+================================================================================
+Để mô phỏng các tình huống sự cố và testing hệ thống:
+1. Chạy scripts tạo sự cố test:
+   python scripts/generate_incidents.py --scenario database_failure --intensity medium --duration 5 --rate 2.0
+2. Xem log trong terminal đang chạy streaming_worker.py để thấy log test được xử lý
+3. Kiểm tra các incident được tạo ra qua:
+   - API: http://localhost:8000/api/v1/incidents
+   - Hoặc qua Swagger UI tại http://localhost:8000/docs
+
+================================================================================
+BƯỚC 9: XEM LOG VÀ GIÁM SÁT
+================================================================================
+- Để xem log các services (nếu dùng Docker):
+  docker compose logs -f backend
+  docker compose logs -f streaming_worker
+  docker compose logs -f celery_worker
+
+- Để truy cập database trực tiếp (nếu dùng Docker):
+  docker compose exec postgres psql -U observability -d observability_db
+  Sau đó chạy SQL: SELECT * FROM incidents LIMIT 5;
+
+================================================================================
+BƯỚC 10: CHẠY KIỂM THỬ (TUYỂN CHỌN)
+================================================================================
+1. Chạy tất cả tests backend:
+   pytest tests/
+
+2. Chỉ chạy tests đơn vị:
+   pytest tests/unit/ -v
+
+3. Chạy tests dịch vụ cụ thể (ví dụ: anomaly detector):
+   pytest tests/unit/test_anomaly_detector.py -v
+
+================================================================================
+GHI CHÚ QUAN TRỌNG
+================================================================================
+1. Nếu bạn dùng Docker, mọi thứ đã được cấu hình sẵn - chỉ cần chạy docker compose up -d
+2. Nếu gặp vấn đề với ports đang được sử dụng (8000, 3000, 5432, 6379), hãy:
+   - Dừng các ứng dụng khác đang sử dụng những port này
+   - Hoặc thay đổi port trong file .env và docker-compose.yml
+3. Frontend hiện tại là bản foundation - để phát triển đầy đủ, cần cài đặt Node.js và cd vào thư mục frontend để chạy npm start
+4. Đối với môi trường doanh nghiệp, hãy tham khảo file PROGRESS_SUMMARY.md và IMPLEMENTATION_COMPLETE.md để biết chi tiết về những phần đã hoàn thành
+5. Lưu ý quan trọng: Mysql và các file môi trường (.env) không được-add vào git vì lý do bảo mật
+
+================================================================================
+VIDEO HƯỚNG DẪN (NẾU CÓ)
+================================================================================
+Nếu bạn cần hướng dẫn trực quan, hãy tìm kiếm trên YouTube:
+- "FastAPI PostgreSQL Redis Docker Compose tutorial"
+- "React TypeScript frontend setup"
+- "Celery worker with Redis broker"
+
+================================================================================
+KẾT THÚC HƯỚNG DẪN
+================================================================================
+Chúc bạn thành công với AI Observability Platform!
+Nếu còn thắc mắc, hãy tham khảo lại file README.md hoặc liên hệ với người hướng dẫn.
+================================================================================

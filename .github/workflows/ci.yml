@@ -1,0 +1,130 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: observability
+          POSTGRES_PASSWORD: observability_pass
+          POSTGRES_DB: observability_db
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U $$POSTGRES_USER"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: [6379:6379]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      POSTGRES_USER: observability
+      POSTGRES_PASSWORD: observability_pass
+      POSTGRES_DB: observability_db
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      OLLAMA_BASE_URL: http://localhost:11434
+      SECRET_KEY: test-secret-key-for-ci
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        # Install testing dependencies
+        pip install pytest pytest-asyncio
+
+    - name: Run database migrations
+      run: |
+        python -m scripts.seed_database --create-tables --seed-services
+
+    - name: Run backend tests
+      run: |
+        pytest tests/ -v
+
+    - name: Setup Node.js for frontend tests
+      if: always()  # Run even if previous steps fail
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install frontend dependencies
+      if: always()
+      working-directory: ./frontend
+      run: |
+        npm ci
+
+    - name: Run frontend tests
+      if: always()
+      working-directory: ./frontend
+      run: |
+        npm test
+
+    - name: Build Docker images
+      if: success()
+      run: |
+        docker compose build
+
+    - name: Run Docker compose up (quick test)
+      if: success()
+      run: |
+        docker compose up -d
+        sleep 10
+        docker compose ps
+        docker compose down
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and push backend image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./docker/backend.Dockerfile
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/observability-backend:latest
+
+    - name: Build and push frontend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./frontend
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/observability-frontend:latest
