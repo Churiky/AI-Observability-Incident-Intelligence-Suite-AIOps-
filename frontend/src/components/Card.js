@@ -1,7 +1,7 @@
 import React from 'react';
 import './Card.css';
 
-function Card({ title, value, icon, type }) {
+function Card({ title, value, icon, type, subtext }) {
   return (
     <div className={`card ${type || ''}`}>
       <div className="card-header">
@@ -11,6 +11,7 @@ function Card({ title, value, icon, type }) {
       <div className="card-value">
         {value}
       </div>
+      {subtext && <div className="card-subtext">{subtext}</div>}
     </div>
   );
 }

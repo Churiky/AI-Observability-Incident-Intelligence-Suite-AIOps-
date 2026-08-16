@@ -70,3 +70,26 @@
 .card.success .card-value { color: var(--color-success); text-shadow: 0 0 15px var(--color-success-glow); }
 .card.warning .card-value { color: var(--color-warning); text-shadow: 0 0 15px var(--color-warning-glow); }
 .card.primary .card-value { color: var(--color-primary); text-shadow: 0 0 15px var(--color-primary-glow); }
+
+.card-subtext {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  margin-top: 4px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 10px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-indicator.active { color: #f87171; }
+.status-indicator.investigating { color: #fbbf24; }
+.status-indicator.resolved { color: #34d399; }

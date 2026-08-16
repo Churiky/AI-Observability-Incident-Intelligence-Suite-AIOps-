@@ -87,7 +87,18 @@ function Dashboard() {
     );
   }
 
-  const activeIncidentsCount = incidents.filter(i => i.status === 'ACTIVE').length;
+  const totalIncidentsCount = incidents.length;
+  const activeCount = incidents.filter(i => i.status === 'ACTIVE').length;
+  const investigatingCount = incidents.filter(i => i.status === 'INVESTIGATING').length;
+  const resolvedCount = incidents.filter(i => i.status === 'RESOLVED').length;
+
+  const incidentSubtext = (
+    <>
+      <span className="status-indicator active" title="Active">● {activeCount} Act</span>
+      <span className="status-indicator investigating" title="Investigating">● {investigatingCount} Inv</span>
+      <span className="status-indicator resolved" title="Resolved">● {resolvedCount} Res</span>
+    </>
+  );
 
   return (
     <div className="dashboard">
@@ -118,9 +129,10 @@ function Dashboard() {
               type="primary"
             />
             <Card 
-              title="Active Incidents" 
-              value={activeIncidentsCount} 
-              type={activeIncidentsCount > 0 ? 'danger' : 'success'}
+              title="System Incidents" 
+              value={totalIncidentsCount} 
+              type={activeCount > 0 ? 'danger' : 'success'}
+              subtext={incidentSubtext}
             />
             <Card 
               title="Anomalies Today" 
@@ -149,7 +161,7 @@ function Dashboard() {
 
           <section className="incidents-section">
             <div className="section-header">
-              <h2>🚨 Active System Incidents ({incidents.length})</h2>
+              <h2>🚨 System Incidents List ({incidents.length})</h2>
             </div>
             <IncidentTable incidents={incidents} />
           </section>
