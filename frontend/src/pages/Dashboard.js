@@ -132,7 +132,6 @@ function Dashboard() {
               title="System Incidents" 
               value={totalIncidentsCount} 
               type={activeCount > 0 ? 'danger' : 'success'}
-              subtext={incidentSubtext}
             />
             <Card 
               title="Anomalies Today" 
